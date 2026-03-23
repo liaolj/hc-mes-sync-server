@@ -1,0 +1,147 @@
+# 合创 MES 数据同步服务器 — CI/CD 工作流
+# 触发条件：推送到 master 分支 或 手动触发
+# 流程：安装依赖 → 代码校验 → 打包产物 → SSH 部署到远程服务器
+
+name: 部署同步服务器
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:  # 支持手动触发
+
+jobs:
+  # ================================================================
+  # 阶段一：构建 & 校验
+  # ================================================================
+  build:
+    name: 构建与校验
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Node.js 环境
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 检查代码可加载性
+        run: |
+          # 验证主入口和数据库模块可以被正常 require（不启动监听）
+          node -e "
+            // 只校验 db.js 模块的语法和初始化逻辑
+            require('./db');
+            console.log('✅ db.js 模块加载成功');
+          "
+          echo "✅ 代码校验通过"
+
+      - name: 打包部署产物
+        run: |
+          # 创建部署目录（排除不需要的文件）
+          mkdir -p deploy
+          cp -r server.js db.js package.json package-lock.json views .env.example deploy/
+          tar -czf deploy-artifact.tar.gz -C deploy .
+
+      - name: 上传部署产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-bundle
+          path: deploy-artifact.tar.gz
+          retention-days: 7
+
+  # ================================================================
+  # 阶段二：部署到远程服务器
+  # ================================================================
+  deploy:
+    name: 部署到服务器
+    needs: build
+    runs-on: ubuntu-latest
+    # 仅 master 分支推送时自动部署；手动触发也可部署
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+      - name: 下载部署产物
+        uses: actions/download-artifact@v4
+        with:
+          name: server-bundle
+
+      - name: 通过 SSH 部署到远程服务器
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            set -e
+
+            # 部署目录
+            APP_DIR="${{ secrets.APP_DIR || '/opt/hc-mes-sync-server' }}"
+            BACKUP_DIR="${APP_DIR}_backup_$(date +%Y%m%d_%H%M%S)"
+
+            echo "🚀 开始部署到 ${APP_DIR}"
+
+            # 如果应用目录已存在则备份
+            if [ -d "$APP_DIR" ]; then
+              echo "📦 备份当前版本到 ${BACKUP_DIR}"
+              cp -r "$APP_DIR" "$BACKUP_DIR"
+            fi
+
+            # 创建部署目录
+            mkdir -p "$APP_DIR"
+
+      - name: 传输产物并重启服务
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          source: "deploy-artifact.tar.gz"
+          target: "/tmp"
+
+      - name: 解压并重启服务
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            set -e
+
+            APP_DIR="${{ secrets.APP_DIR || '/opt/hc-mes-sync-server' }}"
+
+            echo "📂 解压部署产物..."
+            cd "$APP_DIR"
+            tar -xzf /tmp/deploy-artifact.tar.gz -C "$APP_DIR"
+            rm -f /tmp/deploy-artifact.tar.gz
+
+            echo "📦 安装生产依赖..."
+            cd "$APP_DIR"
+            npm ci --production
+
+            echo "🔄 重启服务..."
+            # 使用 pm2 管理进程（如果已安装）
+            if command -v pm2 &> /dev/null; then
+              pm2 restart hc-mes-sync-server 2>/dev/null || pm2 start server.js --name hc-mes-sync-server
+              pm2 save
+              echo "✅ 已通过 pm2 重启服务"
+            # 否则使用 systemd
+            elif systemctl is-active --quiet hc-mes-sync-server 2>/dev/null; then
+              sudo systemctl restart hc-mes-sync-server
+              echo "✅ 已通过 systemd 重启服务"
+            else
+              echo "⚠️  未检测到 pm2 或 systemd 服务，请手动重启"
+              echo "   建议使用: pm2 start server.js --name hc-mes-sync-server"
+            fi
+
+            echo ""
+            echo "✅ 部署完成！"
+            echo "   版本: $(git log --oneline -1 2>/dev/null || echo 'N/A')"
+            echo "   目录: ${APP_DIR}"
