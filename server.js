@@ -206,6 +206,49 @@ app.get('/api/stats', (req, res) => {
   }
 });
 
+// ========== 数据库重置 API ==========
+
+app.post('/api/reset', (req, res) => {
+  try {
+    const { target } = req.body; // 'all' | 'flatness' | 'thermal'
+    if (!target || !['all', 'flatness', 'thermal'].includes(target)) {
+      return res.status(400).json({ error: '参数错误：target 必须为 all、flatness 或 thermal' });
+    }
+
+    let deletedFlatness = 0;
+    let deletedThermal = 0;
+
+    // 使用事务执行删除操作
+    const resetTransaction = db.transaction(() => {
+      if (target === 'all' || target === 'flatness') {
+        const info = db.prepare('DELETE FROM flatness_records').run();
+        deletedFlatness = info.changes;
+      }
+      if (target === 'all' || target === 'thermal') {
+        const info = db.prepare('DELETE FROM thermal_records').run();
+        deletedThermal = info.changes;
+      }
+    });
+
+    resetTransaction();
+
+    console.log(`[数据库重置] 目标: ${target}, 删除平坦度: ${deletedFlatness}, 删除热阻: ${deletedThermal}`);
+
+    res.json({
+      success: true,
+      target,
+      deleted: {
+        flatness: deletedFlatness,
+        thermal: deletedThermal,
+        total: deletedFlatness + deletedThermal,
+      },
+    });
+  } catch (err) {
+    console.error('[重置错误]', err.message);
+    res.status(500).json({ error: '服务器内部错误: ' + err.message });
+  }
+});
+
 // ========== Web 界面 ==========
 app.get('/', (req, res) => {
   const tab = req.query.tab || 'flatness';

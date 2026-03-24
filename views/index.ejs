@@ -186,14 +186,137 @@
       color: #94a3b8;
       font-size: 14px;
     }
+
+    /* 重置按钮 */
+    .btn-reset {
+      padding: 8px 18px;
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-reset:hover {
+      background: rgba(239, 68, 68, 0.3);
+      color: #fef2f2;
+      border-color: rgba(239, 68, 68, 0.5);
+    }
+
+    /* 模态对话框 */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      width: 420px;
+      max-width: 90vw;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: modalIn 0.2s ease-out;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal h2 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: #1e293b;
+    }
+    .modal .warning {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin: 16px 0;
+      color: #991b1b;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .modal .options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 16px 0 24px;
+    }
+    .modal .option-btn {
+      padding: 12px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #f8fafc;
+      cursor: pointer;
+      font-size: 14px;
+      text-align: left;
+      transition: all 0.15s;
+      color: #334155;
+    }
+    .modal .option-btn:hover {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+    .modal .option-btn.selected {
+      border-color: #ef4444;
+      background: #fef2f2;
+      color: #991b1b;
+      font-weight: 600;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+    .modal-actions button {
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: none;
+    }
+    .btn-cancel {
+      background: #f1f5f9;
+      color: #475569;
+    }
+    .btn-cancel:hover { background: #e2e8f0; }
+    .btn-confirm-reset {
+      background: #ef4444;
+      color: white;
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    .btn-confirm-reset.enabled {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .btn-confirm-reset.enabled:hover { background: #dc2626; }
   </style>
 </head>
 <body>
   <nav class="navbar">
     <h1>📡 合创 MES 数据同步中心</h1>
-    <div class="stats">
-      平坦度数据: <span><%= flatnessTotal %></span> 条 &nbsp;|&nbsp;
-      热阻数据: <span><%= thermalTotal %></span> 条
+    <div style="display:flex; align-items:center; gap:24px;">
+      <div class="stats">
+        平坦度数据: <span><%= flatnessTotal %></span> 条 &nbsp;|&nbsp;
+        热阻数据: <span><%= thermalTotal %></span> 条
+      </div>
+      <button class="btn-reset" onclick="openResetModal()">🗑️ 重置数据库</button>
     </div>
   </nav>
 
@@ -300,5 +423,84 @@
       <% } %>
     </div>
   </div>
+
+  <!-- 重置数据库模态对话框 -->
+  <div class="modal-overlay" id="resetModal">
+    <div class="modal">
+      <h2>⚠️ 重置数据库</h2>
+      <div class="warning">
+        <strong>警告：此操作不可撤销！</strong><br>
+        所选数据将被永久删除，请确认后再操作。
+      </div>
+      <p style="font-size:14px; color:#475569; margin-bottom:8px;">请选择要清空的数据类型：</p>
+      <div class="options">
+        <button class="option-btn" data-target="all" onclick="selectResetTarget(this)">
+          🗃️ 清空所有数据（平坦度 + 热阻）
+        </button>
+        <button class="option-btn" data-target="flatness" onclick="selectResetTarget(this)">
+          📐 仅清空平坦度数据（<%= flatnessTotal %> 条）
+        </button>
+        <button class="option-btn" data-target="thermal" onclick="selectResetTarget(this)">
+          🌡️ 仅清空热阻数据（<%= thermalTotal %> 条）
+        </button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeResetModal()">取消</button>
+        <button class="btn-confirm-reset" id="confirmResetBtn" onclick="executeReset()">确认重置</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let selectedTarget = null;
+    const token = '<%= token %>';
+
+    function openResetModal() {
+      selectedTarget = null;
+      document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+      document.getElementById('confirmResetBtn').classList.remove('enabled');
+      document.getElementById('resetModal').classList.add('active');
+    }
+
+    function closeResetModal() {
+      document.getElementById('resetModal').classList.remove('active');
+    }
+
+    function selectResetTarget(btn) {
+      document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedTarget = btn.dataset.target;
+      document.getElementById('confirmResetBtn').classList.add('enabled');
+    }
+
+    // 点击遮罩层关闭
+    document.getElementById('resetModal').addEventListener('click', function(e) {
+      if (e.target === this) closeResetModal();
+    });
+
+    async function executeReset() {
+      if (!selectedTarget) return;
+
+      const targetLabels = { all: '所有数据', flatness: '平坦度数据', thermal: '热阻数据' };
+      if (!confirm(`最后确认：确定要永久删除【${targetLabels[selectedTarget]}】吗？`)) return;
+
+      try {
+        const res = await fetch('/api/reset?token=' + encodeURIComponent(token), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target: selectedTarget }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(`重置成功！共删除 ${data.deleted.total} 条记录。`);
+          location.reload();
+        } else {
+          alert('重置失败：' + (data.error || '未知错误'));
+        }
+      } catch (err) {
+        alert('请求失败：' + err.message);
+      }
+    }
+  </script>
 </body>
 </html>
