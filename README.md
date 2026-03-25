@@ -18,6 +18,7 @@
 hc-mes-sync-server/
 ├── server.js            # 主入口：路由、中间件、API
 ├── db.js                # 数据库初始化与表结构定义
+├── deploy.sh            # 一键部署脚本
 ├── views/
 │   └── index.ejs        # Web 管理界面模板
 ├── data/                # 运行时生成的 SQLite 数据库目录（已 gitignore）
@@ -29,7 +30,32 @@ hc-mes-sync-server/
 └── package-lock.json
 ```
 
-## 快速开始
+## 一键部署
+
+将项目上传到服务器后，执行以下命令即可完成全部部署：
+
+```bash
+bash deploy.sh
+```
+
+脚本会自动完成：环境检测 → PM2 安装 → 依赖安装 → `.env` 配置 → 启动服务 → 开机自启。
+
+**可选参数**：
+
+```bash
+# 指定端口和令牌
+bash deploy.sh --port 8080 --token my-secret-token
+
+# 指定部署目录
+bash deploy.sh --app-dir /opt/hc-mes-sync-server
+
+# 跳过 PM2 开机自启配置
+bash deploy.sh --skip-pm2-setup
+```
+
+> 前提条件：服务器已安装 **Node.js 18+**。如未安装，脚本会提示安装命令。
+
+## 手动部署
 
 ### 1. 安装依赖
 
