@@ -276,6 +276,49 @@ pm2 start server.js --name hc-mes-sync-server
 | `hc-mes-pt-sync-egui` | 平坦度数据同步客户端（Egui 桌面应用） |
 | `hc-mes-rz-sync-egui` | 热阻数据同步客户端（Egui 桌面应用） |
 
+## 版本管理
+
+项目采用语义化版本（SemVer）进行管理。
+
+### 自动化更新流程
+
+我们提供了一键式版本更新脚本 `version-up.sh`。
+
+**用法：**
+
+```bash
+# 升级修订号 (1.0.0 -> 1.0.1)
+bash version-up.sh patch
+
+# 升级次版本号 (1.0.0 -> 1.1.0)
+bash version-up.sh minor
+
+# 升级主版本号 (1.0.0 -> 2.0.0)
+bash version-up.sh major
+
+# 指定特定版本
+bash version-up.sh 1.2.3
+```
+
+**脚本会自动：**
+1. 修改 `package.json` 中的版本号。
+2. 在 `README.md` 的版本历史中追加记录。
+3. 执行 Git commit 提交变更。
+4. 创建对应的 Git Tag（如 `v1.0.1`）。
+
+### 版本更新新流程
+
+1. **功能开发**：在本地完成代码修改并验证。
+2. **执行更新**：运行 `bash version-up.sh [patch|minor|major]`。
+3. **推送代码**：`git push origin master --tags`。
+4. **自动部署**：GitHub Actions 会检测到新的推送或 Tag 并触发生产环境自动部署。
+
+## 版本历史
+- v1.0.1 (2026-03-27): 自动发布新版本
+
+
+- v1.0.0 (2024-03-27): 初始化版本，建立自动化版本同步机制。
+
 ## License
 
 Private — 内部使用
