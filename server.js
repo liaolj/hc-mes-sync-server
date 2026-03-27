@@ -1,6 +1,8 @@
 const express = require('express');
 const path = require('path');
 const db = require('./db');
+const pkg = require('./package.json');
+const VERSION = pkg.version;
 
 const app = express();
 const PORT = process.env.PORT || 3200;
@@ -149,13 +151,19 @@ app.get('/api/records/flatness', (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 100, 500);
     const offset = (page - 1) * limit;
     const search = req.query.search || '';
+    const clientId = req.query.client_id || '';
 
-    let whereClause = '1=1';
+    let conditions = ['1=1'];
     const params = {};
     if (search) {
-      whereClause = "barcode LIKE '%' || @search || '%'";
+      conditions.push("barcode LIKE '%' || @search || '%'");
       params.search = search;
     }
+    if (clientId) {
+      conditions.push('client_id = @clientId');
+      params.clientId = clientId;
+    }
+    const whereClause = conditions.join(' AND ');
 
     const countRow = db.prepare(`SELECT COUNT(*) as total FROM flatness_records WHERE ${whereClause}`).get(params);
     const records = db.prepare(`SELECT * FROM flatness_records WHERE ${whereClause} ORDER BY id DESC LIMIT @limit OFFSET @offset`).all({ ...params, limit, offset });
@@ -172,13 +180,19 @@ app.get('/api/records/thermal', (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 100, 500);
     const offset = (page - 1) * limit;
     const search = req.query.search || '';
+    const clientId = req.query.client_id || '';
 
-    let whereClause = '1=1';
+    let conditions = ['1=1'];
     const params = {};
     if (search) {
-      whereClause = "barcode LIKE '%' || @search || '%'";
+      conditions.push("barcode LIKE '%' || @search || '%'");
       params.search = search;
     }
+    if (clientId) {
+      conditions.push('client_id = @clientId');
+      params.clientId = clientId;
+    }
+    const whereClause = conditions.join(' AND ');
 
     const countRow = db.prepare(`SELECT COUNT(*) as total FROM thermal_records WHERE ${whereClause}`).get(params);
     const records = db.prepare(`SELECT * FROM thermal_records WHERE ${whereClause} ORDER BY id DESC LIMIT @limit OFFSET @offset`).all({ ...params, limit, offset });
@@ -201,6 +215,60 @@ app.get('/api/stats', (req, res) => {
       flatness: { total: flatnessCount.count, clients: flatnessClients.map(r => r.client_id) },
       thermal: { total: thermalCount.count, clients: thermalClients.map(r => r.client_id) },
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ========== 客户端管理 API ==========
+
+// 获取所有客户端列表（合并两表的 DISTINCT client_id + 备注名）
+app.get('/api/clients', (req, res) => {
+  try {
+    // 从两张数据表中获取所有不重复的 client_id
+    const clients = db.prepare(`
+      SELECT client_id, COUNT(*) as record_count FROM (
+        SELECT client_id FROM flatness_records
+        UNION ALL
+        SELECT client_id FROM thermal_records
+      ) GROUP BY client_id ORDER BY client_id
+    `).all();
+
+    // 查询所有备注
+    const aliases = db.prepare('SELECT client_id, alias FROM client_aliases').all();
+    const aliasMap = {};
+    aliases.forEach(a => { aliasMap[a.client_id] = a.alias; });
+
+    // 合并结果
+    const result = clients.map(c => ({
+      client_id: c.client_id,
+      alias: aliasMap[c.client_id] || '',
+      record_count: c.record_count,
+    }));
+
+    res.json({ clients: result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 设置/更新客户端备注名
+app.put('/api/clients/:client_id/alias', (req, res) => {
+  try {
+    const { client_id } = req.params;
+    const { alias } = req.body;
+
+    if (typeof alias !== 'string') {
+      return res.status(400).json({ error: '参数错误：alias 必须为字符串' });
+    }
+
+    db.prepare(`
+      INSERT INTO client_aliases (client_id, alias, updated_at)
+      VALUES (@client_id, @alias, CURRENT_TIMESTAMP)
+      ON CONFLICT(client_id) DO UPDATE SET alias = @alias, updated_at = CURRENT_TIMESTAMP
+    `).run({ client_id, alias: alias.trim() });
+
+    res.json({ success: true, client_id, alias: alias.trim() });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -256,14 +324,21 @@ app.get('/', (req, res) => {
   const limit = 50;
   const offset = (page - 1) * limit;
   const search = req.query.search || '';
+  const clientId = req.query.client_id || '';
   const token = req.query.token || '';
 
-  let whereClause = '1=1';
+  // 构建 WHERE 条件
+  let conditions = ['1=1'];
   const params = {};
   if (search) {
-    whereClause = "barcode LIKE '%' || @search || '%'";
+    conditions.push("barcode LIKE '%' || @search || '%'");
     params.search = search;
   }
+  if (clientId) {
+    conditions.push('client_id = @clientId');
+    params.clientId = clientId;
+  }
+  const whereClause = conditions.join(' AND ');
 
   let records, total;
   if (tab === 'thermal') {
@@ -282,6 +357,21 @@ app.get('/', (req, res) => {
 
   const totalPages = Math.ceil(total / limit) || 1;
 
+  // 获取客户端列表与备注
+  const allClients = db.prepare(`
+    SELECT client_id FROM flatness_records
+    UNION
+    SELECT client_id FROM thermal_records
+    ORDER BY client_id
+  `).all();
+  const aliasRows = db.prepare('SELECT client_id, alias FROM client_aliases').all();
+  const aliasMap = {};
+  aliasRows.forEach(a => { aliasMap[a.client_id] = a.alias; });
+  const clients = allClients.map(c => ({
+    client_id: c.client_id,
+    alias: aliasMap[c.client_id] || '',
+  }));
+
   res.render('index', {
     tab,
     records,
@@ -290,9 +380,13 @@ app.get('/', (req, res) => {
     totalPages,
     limit,
     search,
+    clientId,
     token,
     flatnessTotal,
     thermalTotal,
+    clients,
+    aliasMap,
+    version: VERSION,
   });
 });
 
@@ -300,7 +394,8 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`\n╔══════════════════════════════════════════════╗`);
   console.log(`║  合创 MES 数据同步服务器已启动                ║`);
-  console.log(`║  地址: http://localhost:${PORT}                 ║`);
-  console.log(`║  令牌: ${TOKEN.substring(0, 8)}...                      ║`);
+  console.log(`║  版本: v${VERSION.padEnd(38, ' ')}║`);
+  console.log(`║  地址: http://localhost:${PORT.toString().padEnd(21, ' ')} ║`);
+  console.log(`║  令牌: ${TOKEN.substring(0, 8).padEnd(37, ' ')}║`);
   console.log(`╚══════════════════════════════════════════════╝\n`);
 });

@@ -35,6 +35,11 @@
       opacity: 0.85;
     }
     .navbar .stats span { font-weight: 600; color: #4fc3f7; }
+    .navbar-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
 
     /* 主体 */
     .main { max-width: 1400px; margin: 0 auto; padding: 24px; }
@@ -67,14 +72,28 @@
       box-shadow: 0 2px 8px rgba(59,130,246,0.3);
     }
 
-    /* 搜索栏 */
-    .search-bar {
+    /* 搜索栏与筛选区 */
+    .filter-bar {
       display: flex;
       gap: 12px;
       margin-bottom: 20px;
       align-items: center;
+      flex-wrap: wrap;
     }
-    .search-bar input {
+    .filter-bar select {
+      padding: 10px 14px;
+      border: 1px solid #dfe6e9;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      background: white;
+      min-width: 220px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      color: #334155;
+    }
+    .filter-bar select:focus { border-color: #3b82f6; }
+    .filter-bar input {
       flex: 1;
       padding: 10px 16px;
       border: 1px solid #dfe6e9;
@@ -82,9 +101,10 @@
       font-size: 14px;
       outline: none;
       transition: border-color 0.2s;
+      min-width: 200px;
     }
-    .search-bar input:focus { border-color: #3b82f6; }
-    .search-bar button {
+    .filter-bar input:focus { border-color: #3b82f6; }
+    .filter-bar button {
       padding: 10px 24px;
       background: #3b82f6;
       color: white;
@@ -95,7 +115,19 @@
       font-weight: 500;
       transition: background 0.2s;
     }
-    .search-bar button:hover { background: #2563eb; }
+    .filter-bar button:hover { background: #2563eb; }
+    .btn-clear-filter {
+      padding: 10px 18px;
+      background: #f1f5f9;
+      color: #475569;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .btn-clear-filter:hover { background: #e2e8f0; }
 
     /* 表格 */
     .table-card {
@@ -147,13 +179,27 @@
     .file-cell { color: #64748b; font-size: 12px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
     .time-cell { color: #94a3b8; font-size: 12px; }
     .client-cell {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
       padding: 2px 8px;
       border-radius: 6px;
       font-size: 11px;
       font-weight: 500;
       background: #ede9fe;
       color: #7c3aed;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .client-alias {
+      font-weight: 700;
+      color: #5b21b6;
+    }
+    .client-mac {
+      opacity: 0.7;
+      font-size: 10px;
+      font-family: monospace;
     }
 
     /* 分页 */
@@ -187,12 +233,9 @@
       font-size: 14px;
     }
 
-    /* 重置按钮 */
-    .btn-reset {
+    /* 导航栏按钮通用 */
+    .navbar-btn {
       padding: 8px 18px;
-      background: rgba(239, 68, 68, 0.15);
-      color: #fca5a5;
-      border: 1px solid rgba(239, 68, 68, 0.3);
       border-radius: 8px;
       font-size: 13px;
       cursor: pointer;
@@ -201,6 +244,26 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      border: 1px solid;
+    }
+
+    /* 客户端管理按钮 */
+    .btn-clients {
+      background: rgba(79, 195, 247, 0.15);
+      color: #b3e5fc;
+      border-color: rgba(79, 195, 247, 0.3);
+    }
+    .btn-clients:hover {
+      background: rgba(79, 195, 247, 0.3);
+      color: #e1f5fe;
+      border-color: rgba(79, 195, 247, 0.5);
+    }
+
+    /* 重置按钮 */
+    .btn-reset {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.3);
     }
     .btn-reset:hover {
       background: rgba(239, 68, 68, 0.3);
@@ -225,8 +288,10 @@
       background: white;
       border-radius: 16px;
       padding: 32px;
-      width: 420px;
+      width: 520px;
       max-width: 90vw;
+      max-height: 80vh;
+      overflow-y: auto;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
       animation: modalIn 0.2s ease-out;
     }
@@ -236,7 +301,7 @@
     }
     .modal h2 {
       font-size: 18px;
-      margin-bottom: 8px;
+      margin-bottom: 16px;
       color: #1e293b;
     }
     .modal .warning {
@@ -280,6 +345,7 @@
       display: flex;
       gap: 12px;
       justify-content: flex-end;
+      margin-top: 20px;
     }
     .modal-actions button {
       padding: 10px 24px;
@@ -306,37 +372,129 @@
       pointer-events: auto;
     }
     .btn-confirm-reset.enabled:hover { background: #dc2626; }
+
+    /* 客户端管理弹窗样式 */
+    .client-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .client-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      transition: all 0.15s;
+    }
+    .client-item:hover {
+      border-color: #c7d2fe;
+      background: #f5f3ff;
+    }
+    .client-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .client-info .mac {
+      font-family: monospace;
+      font-size: 13px;
+      color: #475569;
+      font-weight: 600;
+    }
+    .client-info .record-hint {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+    .alias-input {
+      width: 140px;
+      padding: 6px 10px;
+      border: 1px solid #dfe6e9;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .alias-input:focus { border-color: #7c3aed; }
+    .btn-save-alias {
+      padding: 6px 14px;
+      background: #7c3aed;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .btn-save-alias:hover { background: #6d28d9; }
+    .btn-save-alias:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .alias-saved {
+      color: #16a34a;
+      font-size: 12px;
+      font-weight: 500;
+      animation: fadeIn 0.2s;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .client-empty {
+      text-align: center;
+      padding: 32px;
+      color: #94a3b8;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
   <nav class="navbar">
-    <h1>📡 合创 MES 数据同步中心</h1>
-    <div style="display:flex; align-items:center; gap:24px;">
+    <h1>📡 合创 MES 数据同步中心 <small style="font-size: 12px; font-weight: normal; opacity: 0.6; margin-left: 8px;">v<%= version %></small></h1>
+    <div class="navbar-right">
       <div class="stats">
         平坦度数据: <span><%= flatnessTotal %></span> 条 &nbsp;|&nbsp;
         热阻数据: <span><%= thermalTotal %></span> 条
       </div>
-      <button class="btn-reset" onclick="openResetModal()">🗑️ 重置数据库</button>
+      <button class="navbar-btn btn-clients" onclick="openClientModal()">🏷️ 管理客户端</button>
+      <button class="navbar-btn btn-reset" onclick="openResetModal()">🗑️ 重置数据库</button>
     </div>
   </nav>
 
   <div class="main">
     <!-- Tab 切换 -->
     <div class="tabs">
-      <a class="tab <%= tab === 'flatness' ? 'active' : '' %>" href="/?tab=flatness&token=<%= token %>">
+      <a class="tab <%= tab === 'flatness' ? 'active' : '' %>" href="/?tab=flatness&token=<%= token %><%= clientId ? '&client_id=' + encodeURIComponent(clientId) : '' %>">
         📐 平坦度数据 (<%= flatnessTotal %>)
       </a>
-      <a class="tab <%= tab === 'thermal' ? 'active' : '' %>" href="/?tab=thermal&token=<%= token %>">
+      <a class="tab <%= tab === 'thermal' ? 'active' : '' %>" href="/?tab=thermal&token=<%= token %><%= clientId ? '&client_id=' + encodeURIComponent(clientId) : '' %>">
         🌡️ 热阻数据 (<%= thermalTotal %>)
       </a>
     </div>
 
-    <!-- 搜索栏 -->
-    <form class="search-bar" method="GET" action="/">
+    <!-- 筛选栏 -->
+    <form class="filter-bar" method="GET" action="/">
       <input type="hidden" name="tab" value="<%= tab %>">
       <input type="hidden" name="token" value="<%= token %>">
+      <select name="client_id" onchange="this.form.submit()">
+        <option value="">全部客户端</option>
+        <% clients.forEach(c => { %>
+          <option value="<%= c.client_id %>" <%= clientId === c.client_id ? 'selected' : '' %>>
+            <%= c.alias ? c.alias + '（' + c.client_id + '）' : c.client_id %>
+          </option>
+        <% }); %>
+      </select>
       <input type="text" name="search" value="<%= search %>" placeholder="输入条码关键字搜索...">
       <button type="submit">🔍 搜索</button>
+      <% if (clientId || search) { %>
+        <a href="/?tab=<%= tab %>&token=<%= token %>" class="btn-clear-filter">✕ 清除筛选</a>
+      <% } %>
     </form>
 
     <!-- 数据表格 -->
@@ -362,7 +520,16 @@
             <% records.forEach(r => { %>
               <tr>
                 <td class="id-cell">#<%= r.id %></td>
-                <td><span class="client-cell"><%= r.client_id %></span></td>
+                <td>
+                  <span class="client-cell" title="<%= r.client_id %>">
+                    <% if (aliasMap[r.client_id]) { %>
+                      <span class="client-alias"><%= aliasMap[r.client_id] %></span>
+                      <span class="client-mac">(<%= r.client_id %>)</span>
+                    <% } else { %>
+                      <%= r.client_id %>
+                    <% } %>
+                  </span>
+                </td>
                 <td class="barcode-cell"><%= r.barcode %></td>
                 <td style="color: <%= r.overall_area > 0.4 ? '#dc2626' : '#16a34a' %>; font-weight: 600;"><%= r.overall_area %></td>
                 <td><%= r.adhesive_area %></td>
@@ -395,7 +562,16 @@
             <% records.forEach(r => { %>
               <tr>
                 <td class="id-cell">#<%= r.id %></td>
-                <td><span class="client-cell"><%= r.client_id %></span></td>
+                <td>
+                  <span class="client-cell" title="<%= r.client_id %>">
+                    <% if (aliasMap[r.client_id]) { %>
+                      <span class="client-alias"><%= aliasMap[r.client_id] %></span>
+                      <span class="client-mac">(<%= r.client_id %>)</span>
+                    <% } else { %>
+                      <%= r.client_id %>
+                    <% } %>
+                  </span>
+                </td>
                 <td class="barcode-cell"><%= r.barcode %></td>
                 <td><%= r.product_name || '-' %></td>
                 <td><%= r.channel || '-' %></td>
@@ -416,11 +592,42 @@
         <div class="pagination">
           <div>共 <strong><%= total %></strong> 条记录，第 <strong><%= page %></strong> / <strong><%= totalPages %></strong> 页</div>
           <div class="page-nav">
-            <a href="/?tab=<%= tab %>&page=<%= page - 1 %>&search=<%= search %>&token=<%= token %>" class="<%= page <= 1 ? 'disabled' : '' %>">← 上一页</a>
-            <a href="/?tab=<%= tab %>&page=<%= page + 1 %>&search=<%= search %>&token=<%= token %>" class="<%= page >= totalPages ? 'disabled' : '' %>">下一页 →</a>
+            <a href="/?tab=<%= tab %>&page=<%= page - 1 %>&search=<%= search %>&client_id=<%= clientId %>&token=<%= token %>" class="<%= page <= 1 ? 'disabled' : '' %>">← 上一页</a>
+            <a href="/?tab=<%= tab %>&page=<%= page + 1 %>&search=<%= search %>&client_id=<%= clientId %>&token=<%= token %>" class="<%= page >= totalPages ? 'disabled' : '' %>">下一页 →</a>
           </div>
         </div>
       <% } %>
+    </div>
+  </div>
+
+  <!-- 客户端管理模态对话框 -->
+  <div class="modal-overlay" id="clientModal">
+    <div class="modal">
+      <h2>🏷️ 客户端管理</h2>
+      <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">为 MAC 地址设置备注名，方便识别不同设备。</p>
+      <div class="client-list" id="clientList">
+        <% if (clients.length === 0) { %>
+          <div class="client-empty">暂无已连接的客户端</div>
+        <% } else { %>
+          <% clients.forEach(c => { %>
+            <div class="client-item" data-client-id="<%= c.client_id %>">
+              <div class="client-info">
+                <div class="mac"><%= c.client_id %></div>
+              </div>
+              <input type="text"
+                     class="alias-input"
+                     value="<%= c.alias %>"
+                     placeholder="输入备注名..."
+                     data-client-id="<%= c.client_id %>"
+                     data-original="<%= c.alias %>">
+              <button class="btn-save-alias" onclick="saveAlias(this)" data-client-id="<%= c.client_id %>">保存</button>
+            </div>
+          <% }); %>
+        <% } %>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeClientModal()">关闭</button>
+      </div>
     </div>
   </div>
 
@@ -452,8 +659,62 @@
   </div>
 
   <script>
-    let selectedTarget = null;
     const token = '<%= token %>';
+
+    // ========== 客户端管理弹窗 ==========
+    function openClientModal() {
+      document.getElementById('clientModal').classList.add('active');
+    }
+    function closeClientModal() {
+      document.getElementById('clientModal').classList.remove('active');
+    }
+    // 点击遮罩关闭
+    document.getElementById('clientModal').addEventListener('click', function(e) {
+      if (e.target === this) closeClientModal();
+    });
+
+    // 保存备注名
+    async function saveAlias(btn) {
+      const clientId = btn.dataset.clientId;
+      const input = btn.parentElement.querySelector('.alias-input');
+      const alias = input.value.trim();
+
+      btn.disabled = true;
+      btn.textContent = '保存中...';
+
+      try {
+        const res = await fetch(`/api/clients/${encodeURIComponent(clientId)}/alias?token=${encodeURIComponent(token)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ alias }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          btn.textContent = '✓ 已保存';
+          btn.style.background = '#16a34a';
+          input.dataset.original = alias;
+          // 1.5 秒后恢复
+          setTimeout(() => {
+            btn.textContent = '保存';
+            btn.style.background = '';
+            btn.disabled = false;
+          }, 1500);
+          // 刷新页面以更新表格和筛选器中的显示
+          setTimeout(() => location.reload(), 1600);
+        } else {
+          alert('保存失败：' + (data.error || '未知错误'));
+          btn.textContent = '保存';
+          btn.disabled = false;
+        }
+      } catch (err) {
+        alert('请求失败：' + err.message);
+        btn.textContent = '保存';
+        btn.disabled = false;
+      }
+    }
+
+    // ========== 重置数据库弹窗 ==========
+    let selectedTarget = null;
 
     function openResetModal() {
       selectedTarget = null;

@@ -65,6 +65,15 @@ db.exec(`
   )
 `);
 
+// 客户端备注表 —— 存储 MAC 地址到可读名称的映射
+db.exec(`
+  CREATE TABLE IF NOT EXISTS client_aliases (
+    client_id   TEXT PRIMARY KEY,
+    alias       TEXT DEFAULT '',
+    updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
 console.log(`[数据库] 初始化完成: ${DB_PATH}`);
 
 module.exports = db;

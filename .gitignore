@@ -19,7 +19,12 @@ npm-debug.log*
 
 # macOS 系统文件
 .DS_Store
+.AppleDouble
+.LSOverride
+Icon
 ._*
+.Spotlight-V100
+.Trashes
 
 # IDE / 编辑器
 .vscode/

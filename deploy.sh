@@ -177,6 +177,9 @@ FINAL_TOKEN=$(grep "^SYNC_SERVER_TOKEN=" .env | cut -d= -f2 || echo "")
 
 success ".env 配置就绪"
 
+# 获取当前版本号
+CURRENT_VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "1.0.0")
+
 # ---- 步骤 5: 启动/重启服务 ----
 info "步骤 5/6: 启动服务..."
 
@@ -221,6 +224,7 @@ echo -e "${GREEN}╔════════════════════
 echo -e "${GREEN}║  🎉 部署完成！                                ║${NC}"
 echo -e "${GREEN}╠══════════════════════════════════════════════╣${NC}"
 echo -e "${GREEN}║${NC}  应用名称:  ${CYAN}${APP_NAME}${NC}"
+echo -e "${GREEN}║${NC}  当前版本:  ${YELLOW}v${CURRENT_VERSION}${NC}"
 echo -e "${GREEN}║${NC}  部署目录:  ${CYAN}${APP_DIR}${NC}"
 echo -e "${GREEN}║${NC}  监听端口:  ${CYAN}${FINAL_PORT}${NC}"
 echo -e "${GREEN}║${NC}  访问地址:  ${CYAN}http://localhost:${FINAL_PORT}${NC}"
