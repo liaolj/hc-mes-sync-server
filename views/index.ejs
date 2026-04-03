@@ -505,14 +505,14 @@
         <table>
           <thead>
             <tr>
-              <th>ID</th>
-              <th>来源客户端</th>
+              <th>数据标号</th>
               <th>条形码</th>
               <th>整体平坦度</th>
               <th>背胶平坦度</th>
-              <th>判定结果</th>
-              <th>源文件</th>
+              <th>是否合格</th>
               <th>采集时间</th>
+              <th>来源客户端</th>
+              <th>源文件</th>
               <th>同步时间</th>
             </tr>
           </thead>
@@ -520,6 +520,11 @@
             <% records.forEach(r => { %>
               <tr>
                 <td class="id-cell">#<%= r.id %></td>
+                <td class="barcode-cell"><%= r.barcode %></td>
+                <td style="color: <%= r.overall_area > 0.4 ? '#dc2626' : '#16a34a' %>; font-weight: 600;"><%= r.overall_area %></td>
+                <td><%= r.adhesive_area %></td>
+                <td><% if (r.is_valid === 1) { %><span class="badge-pass">✅ 合格</span><% } else { %><span class="badge-fail">🚫 不合格</span><% } %></td>
+                <td class="time-cell"><%= r.collected_at || '-' %></td>
                 <td>
                   <span class="client-cell" title="<%= r.client_id %>">
                     <% if (aliasMap[r.client_id]) { %>
@@ -530,12 +535,7 @@
                     <% } %>
                   </span>
                 </td>
-                <td class="barcode-cell"><%= r.barcode %></td>
-                <td style="color: <%= r.overall_area > 0.4 ? '#dc2626' : '#16a34a' %>; font-weight: 600;"><%= r.overall_area %></td>
-                <td><%= r.adhesive_area %></td>
-                <td><% if (r.is_valid === 1) { %><span class="badge-pass">✅ 合格</span><% } else { %><span class="badge-fail">🚫 不合格</span><% } %></td>
                 <td class="file-cell" title="<%= r.source_file %>"><%= r.source_file %></td>
-                <td class="time-cell"><%= r.collected_at || '-' %></td>
                 <td class="time-cell"><%= r.synced_at || '-' %></td>
               </tr>
             <% }); %>
