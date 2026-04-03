@@ -7,6 +7,21 @@ const VERSION = pkg.version;
 const app = express();
 const PORT = process.env.PORT || 3200;
 const TOKEN = process.env.SYNC_SERVER_TOKEN || 'hc-sync-2024-secure';
+const os = require('os');
+
+// 获取局域网 IP
+function getLocalIP() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return 'localhost';
+}
+const LOCAL_IP = getLocalIP();
 
 // ========== 中间件 ==========
 app.use(express.json({ limit: '10mb' }));
@@ -391,11 +406,12 @@ app.get('/', (req, res) => {
 });
 
 // ========== 启动服务器 ==========
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n╔══════════════════════════════════════════════╗`);
   console.log(`║  合创 MES 数据同步服务器已启动                ║`);
   console.log(`║  版本: v${VERSION.padEnd(38, ' ')}║`);
-  console.log(`║  地址: http://localhost:${PORT.toString().padEnd(21, ' ')} ║`);
+  console.log(`║  本地: http://localhost:${PORT.toString().padEnd(21, ' ')} ║`);
+  console.log(`║  局域网: http://${LOCAL_IP}:${PORT.toString().padEnd(26 - LOCAL_IP.length, ' ')} ║`);
   console.log(`║  令牌: ${TOKEN.substring(0, 8).padEnd(37, ' ')}║`);
   console.log(`╚══════════════════════════════════════════════╝\n`);
 });

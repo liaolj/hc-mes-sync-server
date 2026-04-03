@@ -603,15 +603,19 @@
           <thead>
             <tr>
               <th>ID</th>
-              <th>来源</th>
-              <th>条码</th>
               <th>产品型号</th>
+              <th>条码编号</th>
               <th>通道</th>
+              <th>测试时间</th>
+              <th>环境温度</th>
               <th>芯片温度</th>
               <th>温差</th>
-              <th>热阻</th>
+              <th>判定标准</th>
               <th>结果</th>
-              <th>判定</th>
+              <th>热阻</th>
+              <th>功率</th>
+              <th>压力</th>
+              <th>时长</th>
               <th>采集时间</th>
             </tr>
           </thead>
@@ -619,24 +623,19 @@
             <% records.forEach(r => { %>
               <tr>
                 <td class="id-cell">#<%= r.id %></td>
-                <td>
-                  <span class="client-cell" title="<%= r.client_id %>">
-                    <% if (aliasMap[r.client_id]) { %>
-                      <span class="client-alias"><%= aliasMap[r.client_id] %></span>
-                      <span class="client-mac">(<%= r.client_id %>)</span>
-                    <% } else { %>
-                      <%= r.client_id %>
-                    <% } %>
-                  </span>
-                </td>
-                <td class="barcode-cell"><%= r.barcode %></td>
                 <td><%= r.product_name || '-' %></td>
+                <td class="barcode-cell"><%= r.barcode %></td>
                 <td><%= r.channel || '-' %></td>
-                <td><%= r.chip_temp %></td>
-                <td><%= r.temp_diff %></td>
-                <td><%= r.thermal_resistance %></td>
-                <td><%= r.result || '-' %></td>
-                <td><% if (r.is_valid === 1) { %><span class="badge-pass">合格</span><% } else { %><span class="badge-fail">不合格</span><% } %></td>
+                <td class="time-cell"><%= r.test_time || '-' %></td>
+                <td><%= r.ambient_temp != null ? Number(r.ambient_temp).toFixed(1) : '-' %></td>
+                <td><%= r.chip_temp != null ? Number(r.chip_temp).toFixed(1) : '-' %></td>
+                <td><%= r.temp_diff != null ? Number(r.temp_diff).toFixed(1) : '-' %></td>
+                <td><%= r.threshold != null ? Number(r.threshold).toFixed(1) : '-' %></td>
+                <td><% if (r.result === 'OK') { %><span class="badge-pass">OK (合格)</span><% } else { %><span class="badge-fail">NG (不合格)</span><% } %></td>
+                <td><%= r.thermal_resistance != null ? Number(r.thermal_resistance).toFixed(4) : '-' %></td>
+                <td><%= r.actual_power != null ? Number(r.actual_power).toFixed(2) : '-' %></td>
+                <td><%= r.test_pressure != null ? Number(r.test_pressure).toFixed(1) : '-' %></td>
+                <td><%= r.test_duration_sec != null ? r.test_duration_sec + 'S' : '-' %></td>
                 <td class="time-cell"><%= r.collected_at || '-' %></td>
               </tr>
             <% }); %>
