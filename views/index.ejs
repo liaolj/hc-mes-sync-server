@@ -452,11 +452,68 @@
       color: #94a3b8;
       font-size: 14px;
     }
+
+    /* 版本徽章 */
+    .version-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-left: 12px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      background: rgba(79, 195, 247, 0.15);
+      color: #4fc3f7;
+      border: 1px solid rgba(79, 195, 247, 0.25);
+      letter-spacing: 0.5px;
+      vertical-align: middle;
+    }
+    .version-badge::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #4fc3f7;
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* 页脚 */
+    .app-footer {
+      max-width: 1400px;
+      margin: 24px auto 0;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    .footer-version {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .footer-version-tag {
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #e2e8f0;
+      color: #475569;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-weight: 600;
+      font-size: 11px;
+    }
   </style>
 </head>
 <body>
   <nav class="navbar">
-    <h1>📡 合创 MES 数据同步中心 <small style="font-size: 12px; font-weight: normal; opacity: 0.6; margin-left: 8px;">v<%= version %></small></h1>
+    <h1>📡 合创 MES 数据同步中心 <span class="version-badge">v<%= version %></span></h1>
     <div class="navbar-right">
       <div class="stats">
         平坦度数据: <span><%= flatnessTotal %></span> 条 &nbsp;|&nbsp;
@@ -599,6 +656,15 @@
       <% } %>
     </div>
   </div>
+
+  <!-- 页脚版本信息 -->
+  <footer class="app-footer">
+    <div class="footer-version">
+      <span>合创 MES 数据同步服务器</span>
+      <span class="footer-version-tag">v<%= version %></span>
+    </div>
+    <div>© 2024 合创科技</div>
+  </footer>
 
   <!-- 客户端管理模态对话框 -->
   <div class="modal-overlay" id="clientModal">
