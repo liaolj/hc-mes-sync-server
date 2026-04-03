@@ -181,25 +181,34 @@ success ".env 配置就绪"
 CURRENT_VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "1.0.0")
 
 # ---- 步骤 5: 启动/重启服务 ----
-info "步骤 5/6: 启动服务..."
+info "步骤 5/6: 清除旧版本与启动服务..."
 
 cd "$APP_DIR"
 
-# 检测服务是否已在 PM2 运行
-if pm2 describe "$APP_NAME" &> /dev/null; then
-    info "检测到已有运行实例，正在重启..."
-    pm2 restart "$APP_NAME" --update-env
-    success "服务已重启"
-else
-    info "首次部署，启动新实例..."
-    pm2 start server.js \
-        --name "$APP_NAME" \
-        --cwd "$APP_DIR" \
-        --max-memory-restart 512M \
-        --log-date-format "YYYY-MM-DD HH:mm:ss" \
-        --merge-logs
-    success "服务已启动"
+# 检测并终止占用端口的旧进程（防止非 pm2 启动的残留进程冲突）
+if command -v lsof &> /dev/null; then
+    if lsof -i:"$FINAL_PORT" -t >/dev/null 2>&1; then
+        warn "检测到端口 $FINAL_PORT 仍被占用，正在强制结束旧进程..."
+        lsof -i:"$FINAL_PORT" -t | xargs kill -9
+        success "已彻底清理占用端口的旧进程"
+    fi
 fi
+
+# 检测服务是否已在 PM2 运行，如果存在则彻底卸载旧实例
+if pm2 describe "$APP_NAME" &> /dev/null; then
+    info "检测到 PM2 已有运行实例，正在卸载旧版本程序..."
+    pm2 delete "$APP_NAME"
+    success "旧版本程序已从 PM2 中卸载"
+fi
+
+info "启动新版本实例..."
+pm2 start server.js \
+    --name "$APP_NAME" \
+    --cwd "$APP_DIR" \
+    --max-memory-restart 512M \
+    --log-date-format "YYYY-MM-DD HH:mm:ss" \
+    --merge-logs
+success "新版本服务已启动"
 
 pm2 save --force 2>/dev/null || true
 
