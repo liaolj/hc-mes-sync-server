@@ -1,6 +1,6 @@
 {
   "name": "hc-mes-sync-server",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "合创 MES 设备数据同步服务器 — 统一接收平坦度与热阻客户端上报数据",
   "main": "server.js",
